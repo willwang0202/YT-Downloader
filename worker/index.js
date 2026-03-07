@@ -21,14 +21,16 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-const INNERTUBE_API_URL =
-  "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+const INNERTUBE_API_URL = "https://www.youtube.com/youtubei/v1/player";
 
 const INNERTUBE_CONTEXT = {
   client: {
-    clientName: "ANDROID",
-    clientVersion: "17.31.35",
-    androidSdkVersion: 30,
+    clientName: "IOS",
+    clientVersion: "19.29.1",
+    deviceModel: "iPhone16,2",
+    deviceMake: "Apple",
+    osName: "iPhone",
+    osVersion: "17.5.1.21F90",
     hl: "en",
     gl: "US",
     utcOffsetMinutes: 0,
@@ -56,7 +58,7 @@ function extractVideoId(url) {
     // youtube.com/embed/ID
     const embedMatch = u.pathname.match(/^\/embed\/([a-zA-Z0-9_-]{11})/);
     if (embedMatch) return embedMatch[1];
-  } catch (_) {}
+  } catch (_) { }
   return null;
 }
 
@@ -64,10 +66,18 @@ function extractVideoId(url) {
 async function getPlayerData(videoId) {
   const res = await fetch(INNERTUBE_API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "User-Agent": "com.google.android.youtube/17.31.35" },
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)",
+      "X-Youtube-Client-Name": "5",
+      "X-Youtube-Client-Version": "19.29.1",
+      "Origin": "https://www.youtube.com",
+    },
     body: JSON.stringify({
       videoId,
       context: INNERTUBE_CONTEXT,
+      contentCheckOk: true,
+      racyCheckOk: true,
     }),
   });
   if (!res.ok) throw new Error(`Innertube error: ${res.status}`);
