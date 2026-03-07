@@ -12,6 +12,10 @@
 <body>
   <div class="noise" aria-hidden="true"></div>
   <main class="wrap">
+    <div class="lang-toggle" aria-label="Language">
+      <button type="button" class="lang-btn is-active" data-lang="en">EN</button>
+      <button type="button" class="lang-btn" data-lang="zh-TW">繁中</button>
+    </div>
     <header class="header">
       <h1 class="title">YT Downloader</h1>
       <p class="tagline">Paste a link. Pick a format. Download. (Local only — runs on your machine.)</p>
@@ -44,6 +48,15 @@
           </optgroup>
         </select>
         <span class="input-focus"></span>
+      </div>
+
+      <div class="field">
+        <label class="label" for="output-dir">Save to</label>
+        <div class="folder-row">
+          <input type="text" id="output-dir" class="input folder-input" readonly
+            placeholder="~/Downloads" />
+          <button type="button" class="btn btn-secondary" id="browse-btn">Browse…</button>
+        </div>
       </div>
 
       <div class="field playlist-field">

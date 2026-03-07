@@ -1,6 +1,6 @@
 # Build YT-Downloader.exe (Windows) and YT-Downloader.app (macOS) on push of a version tag.
 # Creates a GitHub Release and uploads the built files + YT-Downloader.py.
-# From your Mac: git tag v2.1.0 && git push origin v2.1.0
+# From your Mac: git tag v3.0.0 && git push origin v3.0.0
 
 name: Build release
 
@@ -26,7 +26,14 @@ jobs:
           pip install -r requirements.txt pyinstaller
 
       - name: Build .exe
-        run: pyinstaller YT-Downloader.spec
+        run: >
+          pyinstaller
+          --name YT-Downloader
+          --onefile
+          --windowed
+          --add-data "web;web"
+          --collect-all webview
+          YT-Downloader.py
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -50,7 +57,13 @@ jobs:
           pip install -r requirements.txt pyinstaller
 
       - name: Build .app
-        run: pyinstaller YT-Downloader.spec
+        run: >
+          pyinstaller
+          --name YT-Downloader
+          --windowed
+          --add-data "web:web"
+          --collect-all webview
+          YT-Downloader.py
 
       - name: Zip .app
         run: cd dist && zip -r YT-Downloader-mac.zip YT-Downloader.app
@@ -91,8 +104,9 @@ jobs:
             **Downloads**
             - **YT-Downloader.exe** — Windows (no Python needed)
             - **YT-Downloader-mac.zip** — macOS (unzip and open `YT-Downloader.app`)
-            - **YT-Downloader.py** — Single script (Python 3.10+ required)
+            - **YT-Downloader.py** — Single script (Python 3.10+ required, auto-installs deps)
 
-            Run with no arguments to open the web UI in your browser.
+            **v3.0.0** — Rewritten as a native desktop app using pywebview (no browser needed).
+            Files are saved directly to your chosen folder.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
