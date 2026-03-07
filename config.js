@@ -2,4 +2,4 @@
 // After running `npm run deploy` inside worker/, paste the
 // *.workers.dev URL here so the app works without any user setup.
 // Example: window.YT_DOWNLOADER_API = 'https://yt-downloader.YOUR-NAME.workers.dev';
-window.YT_DOWNLOADER_API = '';
+window.YT_DOWNLOADER_API = 'https://yt-downloader.willwang22.workers.dev';
