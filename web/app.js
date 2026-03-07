@@ -3,28 +3,8 @@
 
   var form = document.getElementById("form");
   var urlInput = document.getElementById("url");
-  var apiUrlInput = document.getElementById("apiUrl");
   var submitBtn = document.getElementById("submit");
   var messageEl = document.getElementById("message");
-
-  var STORAGE_KEY = "yt_downloader_api_url";
-
-  function getApiBase() {
-    var fromInput = apiUrlInput && apiUrlInput.value.trim();
-    if (fromInput) return fromInput.replace(/\/$/, "");
-    if (typeof window.YT_DOWNLOADER_API !== "undefined" && window.YT_DOWNLOADER_API) {
-      return window.YT_DOWNLOADER_API.replace(/\/$/, "");
-    }
-    try {
-      var stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return stored.replace(/\/$/, "");
-    } catch (_) { }
-    return window.location.origin;
-  }
-
-  function setApiBase(url) {
-    try { localStorage.setItem(STORAGE_KEY, url); } catch (_) { }
-  }
 
   function setLoading(loading) {
     form.classList.toggle("loading", loading);
@@ -48,16 +28,11 @@
   }
 
   urlInput.addEventListener("input", function () {
-    var v = urlInput.value.trim();
-    setValidity(v.length > 0);
+    setValidity(urlInput.value.trim().length > 0);
     hideMessage();
   });
-
   urlInput.addEventListener("paste", function () {
-    setTimeout(function () {
-      var v = urlInput.value.trim();
-      setValidity(v.length > 0);
-    }, 0);
+    setTimeout(function () { setValidity(urlInput.value.trim().length > 0); }, 0);
   });
 
   form.addEventListener("submit", function (e) {
@@ -71,17 +46,10 @@
     }
 
     var formatEl = document.getElementById("format");
-    var format = formatEl ? formatEl.value : "mp4";
+    var format = formatEl ? (formatEl.value || "mp4").toLowerCase() : "mp4";
     var playlist = document.getElementById("playlist").checked;
 
-    var apiBase = getApiBase();
-    if (!apiBase) {
-      showMessage("Open Advanced and set the API base URL, or deploy the api/ folder and use this app from the same origin.", "error");
-      return;
-    }
-    if (apiUrlInput && apiUrlInput.value.trim()) setApiBase(apiBase);
-
-    var endpoint = apiBase + "/api/download";
+    var endpoint = "/api/download";
     setLoading(true);
 
     fetch(endpoint, {
@@ -92,21 +60,29 @@
       .then(function (res) {
         if (!res.ok) {
           return res.json().then(function (body) {
-            throw new Error(body.detail || res.statusText || "Download failed");
+            var detail = body.detail;
+            var msg = "Download failed";
+            if (typeof detail === "string") msg = detail;
+            else if (Array.isArray(detail) && detail[0] && detail[0].msg) msg = detail[0].msg;
+            throw new Error(msg);
           }).catch(function (err) {
             if (err.message) throw err;
             return res.text().then(function (t) { throw new Error(t || "Download failed"); });
           });
         }
-        return res.blob();
+        return res.blob().then(function (blob) { return { blob: blob, res: res }; });
       })
-      .then(function (blob) {
-        var disposition = "playlist.zip";
+      .then(function (data) {
+        var blob = data.blob;
+        var res = data.res;
         var contentType = blob.type || "application/octet-stream";
         var isZip = contentType.indexOf("zip") !== -1;
-        if (!isZip && blob.size > 0) {
-          var ext = format;
-          disposition = "download." + ext;
+        var disposition;
+        if (isZip) {
+          disposition = "playlist.zip";
+        } else {
+          disposition = parseFilenameFromContentDisposition(res.headers.get("Content-Disposition"));
+          if (!disposition) disposition = "download." + format;
         }
         var a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -123,17 +99,36 @@
       });
   });
 
-  if (apiUrlInput) {
-    try {
-      var saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) apiUrlInput.value = saved;
-    } catch (_) { }
+  function parseFilenameFromContentDisposition(header) {
+    if (!header) return null;
+    var filenameStar = /filename\*=UTF-8''([^;]+)/i.exec(header);
+    if (filenameStar) {
+      try { return decodeURIComponent(filenameStar[1].trim()); } catch (e) { }
+    }
+    var filename = /filename="?([^";\n]+)"?/i.exec(header);
+    if (filename) return filename[1].replace(/\\"/g, '"').trim();
+    return null;
   }
 
   setValidity(urlInput.value.trim().length > 0);
 
-  var versionEl = document.getElementById("version");
-  if (versionEl && window.YT_DOWNLOADER_VERSION) {
-    versionEl.textContent = "v" + window.YT_DOWNLOADER_VERSION;
-  }
+  // Check for app update on GitHub
+  fetch("/api/version")
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (data) {
+      if (!data) return;
+      var versionEl = document.getElementById("version");
+      if (versionEl) versionEl.textContent = "v" + data.current;
+      if (data.update_available && data.latest && data.release_url) {
+        var banner = document.getElementById("update-banner");
+        var link = document.getElementById("update-banner-link");
+        if (banner && link) {
+          link.href = data.release_url;
+          link.textContent = "Update available: v" + data.latest + " — click to download";
+          banner.hidden = false;
+          document.querySelector(".update-banner-dismiss").onclick = function () { banner.hidden = true; };
+        }
+      }
+    })
+    .catch(function () {});
 })();

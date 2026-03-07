@@ -1,91 +1,104 @@
 # YT Downloader
 
-A minimal YouTube (and yt-dlp–supported) downloader with a static frontend for **GitHub Pages** and a serverless backend using a **Cloudflare Worker** (free tier).
+A **local-only** Python app that wraps [yt-dlp](https://github.com/yt-dlp/yt-dlp). No web API, no backend — it runs entirely on your machine and only connects to the internet to fetch videos. Works on **Windows** and **macOS**.
 
-## Features
+## What you need
 
-- **No install needed for end users** — just open the page and paste a URL
-- Supports `youtube.com/watch`, `youtu.be`, and **YouTube Shorts** (`youtube.com/shorts/…`)
-- **Cloudflare Worker** backend — free, global, no cold starts
-- **Playlist or single**: choose "Download full playlist" or only the linked video (default single)
-- **Formats**: `.mp4`, `.mov`, `.webm`, `.mkv`, `.m4a` (and more via the Python backend)
-- Minimal, dark UI with smooth animations
+- **Python 3.10+** — [python.org](https://www.python.org/downloads/) (Windows: check “Add Python to PATH” when installing)
+- **FFmpeg** (optional) — needed for audio formats (MP3, WAV, FLAC, etc.). Video (MP4, WebM, MKV) and M4A often work without it. [FFmpeg downloads](https://ffmpeg.org/download.html)
 
-## Quick Start
+## Quick start
 
-### Option 1 — Cloudflare Worker (recommended, free, no Python needed)
+**One command on both macOS and Windows:**
 
-1. Install [Wrangler](https://developers.cloudflare.com/workers/wrangler/):
-   ```bash
-   npm install -g wrangler
-   wrangler login   # opens browser to authenticate with your Cloudflare account
-   ```
+```bash
+python run.py "https://youtube.com/watch?v=..."
+```
 
-2. Deploy the Worker:
-   ```bash
-   cd worker
-   npm install
-   npm run deploy
-   ```
-   Wrangler will print your Worker URL, e.g. `https://yt-downloader.YOUR-NAME.workers.dev`.
+The first run creates a virtual environment (`.venv`) and installs dependencies. Later runs reuse it.
 
-3. Paste that URL into **`config.js`**:
-   ```js
-   window.YT_DOWNLOADER_API = 'https://yt-downloader.YOUR-NAME.workers.dev';
-   ```
+### Optional: script wrappers
 
-4. Push to GitHub → GitHub Pages serves the frontend. Done — any browser, no setup for users.
+- **macOS / Linux:** `chmod +x run.sh` then `./run.sh "https://..."`
+- **Windows:** `run.bat "https://..."`
 
-> **Note on audio formats**: The Worker returns audio as `.m4a` (no FFmpeg in Cloudflare). For mp3/wav/flac transcoding, use Option 2 below.
+Both call `run.py`; use whichever you prefer.
 
----
+## Usage
 
-### Option 2 — Python backend (full format support, requires FFmpeg)
+### Command line
 
-1. **Start locally** (requires [FFmpeg](https://ffmpeg.org/) and Python 3.10+):
-   ```bash
-   cd api
-   python -m venv venv
-   source venv/bin/activate      # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   python server.py
-   ```
-   Open **http://127.0.0.1:8000/**.
+```bash
+# Single video (default: MP4)
+python run.py "https://youtube.com/watch?v=..."
 
-2. **Deploy** to Railway or Render:
-   - Root directory: `api`
-   - Build: `pip install -r requirements.txt`
-   - Start: `uvicorn server:app --host 0.0.0.0 --port $PORT`
-   - Add FFmpeg to the environment (buildpack or Docker).
-   - Copy the URL and paste it into the **Advanced → API base URL** field (saved in localStorage).
+# Audio only (e.g. MP3) — requires FFmpeg
+python run.py "https://youtube.com/watch?v=..." -f mp3
 
----
+# Full playlist
+python run.py "https://youtube.com/playlist?list=..." --playlist
 
-## Project Layout
+# Web UI (opens in browser)
+python run.py --web
+
+# Desktop GUI
+python run.py --gui
+```
+
+**Formats:** `mp4`, `mov`, `webm`, `mkv` (video) | `mp3`, `wav`, `m4a`, `aac`, `ogg`, `flac` (audio).
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `url` | Video or playlist URL (positional) |
+| `-f`, `--format` | Output format (default: `mp4`) |
+| `-p`, `--playlist` | Download full playlist |
+| `-o`, `--output-dir` | Folder to save files (default: current directory) |
+| `--gui` | Open the graphical interface instead of CLI |
+| `--web` | Start the local web UI (opens in browser) |
+
+### Graphical interface (GUI)
+
+```bash
+python run.py --gui
+```
+
+Paste a URL, pick format and options, choose a folder, and click Download. No cloud API — everything runs locally.
+
+### Web UI
+
+```bash
+python run.py --web
+```
+
+Your browser will open to the UI. Paste a URL, choose format and playlist option, and click Download. Files are sent to your browser; the server does not expose your machine to the network.
+
+## Project layout
 
 ```
 YT-Downloader/
-├── index.html        # Single-page UI
-├── styles.css        # Layout and animations
-├── app.js            # Form logic and API calls
-├── config.js         # Set window.YT_DOWNLOADER_API here after deploying
-├── worker/
-│   ├── index.js      # Cloudflare Worker (Innertube API → stream redirect)
-│   ├── wrangler.toml # Wrangler deploy config
-│   └── package.json
-├── api/
-│   ├── server.py     # FastAPI + yt-dlp (full transcoding)
-│   └── requirements.txt
+├── run.py              # Single entry point (macOS + Windows)
+├── yt_downloader.py    # Main app (CLI + GUI + --web)
+├── server.py           # Local web server for web UI
+├── web/                # Web UI (HTML, CSS, JS)
+├── requirements.txt
+├── run.sh              # Optional: ./run.sh (calls run.py)
+├── run.bat             # Optional: run.bat (calls run.py)
 └── README.md
 ```
 
-## API Contract
+## Without the run script
 
-`POST /api/download`  
-Body: `{ "url": "<YouTube URL>", "format": "mp4"|"m4a"|…, "playlist": true|false }`  
-Returns: binary file (single) or `playlist.zip` (playlist) — or a `302` redirect to the stream (Worker mode).  
-CORS is enabled for all origins.
+If you prefer to manage the virtual environment yourself:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python yt_downloader.py "https://youtube.com/watch?v=..."
+```
 
 ## Disclaimer
 
-For personal use only. Respect creators' rights and the terms of the platforms you download from.
+For personal use only. Respect creators’ rights and the terms of the platforms you download from.
