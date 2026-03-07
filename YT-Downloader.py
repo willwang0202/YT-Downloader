@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 YT-Downloader — Single runnable release file.
-Run:  python YT-Downloader.py   (opens web UI)
-      python YT-Downloader.py --web
+Run:  python YT-Downloader.py   (opens web UI in browser)
+      python YT-Downloader.py --gui
       python YT-Downloader.py --gui
       python YT-Downloader.py "https://youtube.com/watch?v=..."
 First run creates .venv and installs dependencies next to this file.
@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import zipfile
 from pathlib import Path
 from typing import Callable
@@ -385,14 +386,51 @@ def _download_api(req: DownloadRequest):
             headers={"Content-Disposition": "attachment; filename=playlist.zip"})
 
 def _run_server(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True) -> None:
-    import webbrowser
     import uvicorn
     url = f"http://{host}:{port}"
+
+    def _open_browser() -> None:
+        if not open_browser:
+            return
+        # Packaged .app on macOS: webbrowser.open() often fails; use macOS "open" command
+        if sys.platform == "darwin" and getattr(sys, "frozen", False):
+            try:
+                subprocess.run(["open", url], check=False, timeout=5)
+                return
+            except Exception:
+                pass
+        try:
+            import webbrowser
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    def run_uvicorn() -> None:
+        uvicorn.run(app, host=host, port=port, log_level="warning")
+
+    # Run server in non-daemon thread so process stays alive when main thread exits
+    server_thread = threading.Thread(target=run_uvicorn, daemon=False)
+    server_thread.start()
+
+    # Open browser after short delay so server is listening
     if open_browser:
-        webbrowser.open(url)
+        def delayed_open() -> None:
+            time.sleep(1.5)
+            _open_browser()
+        threading.Thread(target=delayed_open, daemon=True).start()
+
     print(f"Web UI: {url}")
     print("Press Ctrl+C to stop.")
-    uvicorn.run(app, host=host, port=port, log_level="warning")
+    # On packaged macOS .app, main thread must run the run loop or Finder reports "not responding"
+    if sys.platform == "darwin" and getattr(sys, "frozen", False):
+        try:
+            import ctypes
+            from ctypes import util
+            cf = ctypes.CDLL(util.find_library("CoreFoundation"))
+            cf.CFRunLoopRun()
+        except Exception:
+            server_thread.join()
+    # Otherwise main thread can exit; server runs in non-daemon thread
 
 # -----------------------------------------------------------------------------
 # GUI (tkinter)
@@ -401,13 +439,16 @@ def _launch_gui(output_dir: str | Path | None = None) -> None:
     try:
         import tkinter as tk
         from tkinter import ttk, scrolledtext, messagebox, filedialog
-    except ImportError:
-        print("tkinter is not available. Use the CLI.", file=sys.stderr)
+    except ImportError as e:
+        print("tkinter is not available. Use --web for the browser UI.", file=sys.stderr)
         sys.exit(1)
     root = tk.Tk()
     root.title("YT Downloader")
     root.minsize(420, 380)
     root.geometry("480x420")
+    # Bring window to front (helps when launched from .app / double-click)
+    root.attributes("-topmost", True)
+    root.after(100, lambda: root.attributes("-topmost", False))
     out_dir_var = tk.StringVar(value=str(Path(output_dir or os.getcwd()).resolve()))
     ttk.Label(root, text="URL").pack(anchor="w", padx=12, pady=(12, 2))
     url_entry = ttk.Entry(root, width=60)
@@ -459,6 +500,9 @@ def _launch_gui(output_dir: str | Path | None = None) -> None:
         root.after(500, lambda: btn_dl.config(state="normal"))
     btn_dl = ttk.Button(root, text="Download", command=do_download)
     btn_dl.pack(pady=8)
+    root.update_idletasks()
+    root.lift()
+    root.focus_force()
     root.mainloop()
 
 # -----------------------------------------------------------------------------
@@ -473,6 +517,11 @@ def main_cli() -> None:
     parser.add_argument("--gui", action="store_true", help="Open desktop GUI")
     parser.add_argument("--web", action="store_true", help="Open web UI in browser")
     args = parser.parse_args()
+
+    # No arguments (e.g. double-click .app/.exe) → open web UI
+    if len(sys.argv) == 1:
+        args.web = True
+
     if args.gui:
         _launch_gui(output_dir=args.output_dir)
         return

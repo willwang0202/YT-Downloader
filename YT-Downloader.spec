@@ -14,6 +14,7 @@ a = Analysis(
     binaries=[],
     datas=[],
     hiddenimports=[
+        'tkinter',
         'yt_dlp',
         'certifi',
         'fastapi',
@@ -107,8 +108,8 @@ else:
         info_plist={
             'CFBundleName': 'YT-Downloader',
             'CFBundleDisplayName': 'YT Downloader',
-            'CFBundleVersion': '2.1.0',
-            'CFBundleShortVersionString': '2.1.0',
+            'CFBundleVersion': '2.1.1',
+            'CFBundleShortVersionString': '2.1.1',
             'NSHighResolutionCapable': True,
         },
     )
