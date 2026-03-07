@@ -39,7 +39,7 @@ pyinstaller YT-Downloader.spec
 
 ## Attach to a GitHub release
 
-1. Create a new release and tag (e.g. `v2.1.0`).
+1. Create a new release and tag (e.g. `v2.1.2`).
 2. Attach:
    - `YT-Downloader.py` (from repo)
    - `dist/YT-Downloader.exe` (built on Windows)
@@ -48,4 +48,4 @@ pyinstaller YT-Downloader.spec
 
 ## Version
 
-The version is set in `version.py` and `YT-Downloader.py` (`__version__ = "2.1.0"`). Bump both when cutting a new release and update `YT-Downloader.spec`’s `CFBundleShortVersionString` / `CFBundleVersion` for the .app.
+The version is set in `version.py` and `YT-Downloader.py` (`__version__ = "2.1.2"`). Bump both when cutting a new release and update `YT-Downloader.spec`’s `CFBundleShortVersionString` / `CFBundleVersion` for the .app.

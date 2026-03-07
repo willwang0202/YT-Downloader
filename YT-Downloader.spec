@@ -108,8 +108,8 @@ else:
         info_plist={
             'CFBundleName': 'YT-Downloader',
             'CFBundleDisplayName': 'YT Downloader',
-            'CFBundleVersion': '2.1.1',
-            'CFBundleShortVersionString': '2.1.1',
+            'CFBundleVersion': '2.1.2',
+            'CFBundleShortVersionString': '2.1.2',
             'NSHighResolutionCapable': True,
         },
     )

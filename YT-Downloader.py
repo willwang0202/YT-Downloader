@@ -80,7 +80,7 @@ from pydantic import BaseModel, field_validator
 # -----------------------------------------------------------------------------
 # Version & GitHub update check
 # -----------------------------------------------------------------------------
-__version__ = "2.1.0"
+__version__ = "2.1.2"
 GITHUB_REPO = "willwang0202/YT-Downloader"
 GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 RELEASE_URL = f"https://github.com/{GITHUB_REPO}/releases/latest"
@@ -180,10 +180,6 @@ WEB_HTML = """<!DOCTYPE html>
 <body>
   <div class="noise" aria-hidden="true"></div>
   <main class="wrap">
-    <div id="update-banner" class="update-banner" role="status" hidden>
-      <a id="update-banner-link" href="#" target="_blank" rel="noopener">A new version is available</a>
-      <button type="button" class="update-banner-dismiss" aria-label="Dismiss">×</button>
-    </div>
     <header class="header">
       <h1 class="title">YT Downloader</h1>
       <p class="tagline">Paste a link. Pick a format. Download. (Local only.)</p>
@@ -283,7 +279,6 @@ var a=document.createElement("a");a.href=URL.createObjectURL(data.blob);a.downlo
 setValidity(urlInput.value.trim().length>0);
 fetch("/api/version").then(function(r){return r.ok?r.json():null;}).then(function(d){
 if(!d)return;var ve=document.getElementById("version");if(ve)ve.textContent="v"+d.current;
-if(d.update_available&&d.latest&&d.release_url){var b=document.getElementById("update-banner"),l=document.getElementById("update-banner-link");if(b&&l){l.href=d.release_url;l.textContent="Update available: v"+d.latest+" — click to download";b.hidden=false;document.querySelector(".update-banner-dismiss").onclick=function(){b.hidden=true;};}}
 }).catch(function(){});
 })();
 """
@@ -390,8 +385,6 @@ def _run_server(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = 
     url = f"http://{host}:{port}"
 
     def _open_browser() -> None:
-        if not open_browser:
-            return
         # Packaged .app on macOS: webbrowser.open() often fails; use macOS "open" command
         if sys.platform == "darwin" and getattr(sys, "frozen", False):
             try:
@@ -405,32 +398,14 @@ def _run_server(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = 
         except Exception:
             pass
 
-    def run_uvicorn() -> None:
-        uvicorn.run(app, host=host, port=port, log_level="warning")
-
-    # Run server in non-daemon thread so process stays alive when main thread exits
-    server_thread = threading.Thread(target=run_uvicorn, daemon=False)
-    server_thread.start()
-
-    # Open browser after short delay so server is listening
+    # Open browser after a short delay so the server is ready
     if open_browser:
-        def delayed_open() -> None:
-            time.sleep(1.5)
-            _open_browser()
-        threading.Thread(target=delayed_open, daemon=True).start()
+        threading.Thread(target=lambda: (time.sleep(1.5), _open_browser()), daemon=True).start()
 
     print(f"Web UI: {url}")
     print("Press Ctrl+C to stop.")
-    # On packaged macOS .app, main thread must run the run loop or Finder reports "not responding"
-    if sys.platform == "darwin" and getattr(sys, "frozen", False):
-        try:
-            import ctypes
-            from ctypes import util
-            cf = ctypes.CDLL(util.find_library("CoreFoundation"))
-            cf.CFRunLoopRun()
-        except Exception:
-            server_thread.join()
-    # Otherwise main thread can exit; server runs in non-daemon thread
+    # Run server on the main thread (simpler and works both as script and as bundled app)
+    uvicorn.run(app, host=host, port=port, log_level="warning")
 
 # -----------------------------------------------------------------------------
 # GUI (tkinter)

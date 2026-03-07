@@ -112,23 +112,13 @@
 
   setValidity(urlInput.value.trim().length > 0);
 
-  // Check for app update on GitHub
+  // Fetch and display app version (no update banner)
   fetch("/api/version")
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (data) {
       if (!data) return;
       var versionEl = document.getElementById("version");
       if (versionEl) versionEl.textContent = "v" + data.current;
-      if (data.update_available && data.latest && data.release_url) {
-        var banner = document.getElementById("update-banner");
-        var link = document.getElementById("update-banner-link");
-        if (banner && link) {
-          link.href = data.release_url;
-          link.textContent = "Update available: v" + data.latest + " — click to download";
-          banner.hidden = false;
-          document.querySelector(".update-banner-dismiss").onclick = function () { banner.hidden = true; };
-        }
-      }
     })
     .catch(function () {});
 })();
