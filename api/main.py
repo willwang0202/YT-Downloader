@@ -60,6 +60,25 @@ else:
         return {"service": "YT-Downloader API", "docs": "/docs"}
 
 
+@app.get("/api/health")
+def health():
+    """Debug endpoint — shows whether cookies are loaded."""
+    cookie_loaded = _cookie_file is not None and Path(_cookie_file).exists()
+    preview = ""
+    if cookie_loaded:
+        try:
+            lines = Path(_cookie_file).read_text().splitlines()
+            preview = "\n".join(lines[:5])
+        except Exception:
+            preview = "(unreadable)"
+    return {
+        "status": "ok",
+        "cookie_file": _cookie_file,
+        "cookie_loaded": cookie_loaded,
+        "cookie_preview": preview,
+    }
+
+
 class DownloadRequest(BaseModel):
     url: str
     format: str  # video: mp4, mov, webm, mkv | audio: mp3, wav, m4a, aac, ogg, flac
@@ -82,6 +101,8 @@ def get_ydl_opts(format_key: str, out_dir: str, single: bool) -> dict:
     }
     if _cookie_file:
         opts["cookiefile"] = _cookie_file
+    # Use android_testsuite player — fewer bot-detection restrictions on servers
+    opts["extractor_args"] = {"youtube": {"player_client": ["android_testsuite"]}}
 
     if audio_only:
         opts["format"] = "bestaudio/best"
