@@ -70,13 +70,13 @@
       return;
     }
 
-    var formatEl = form.querySelector('input[name="format"]:checked');
+    var formatEl = document.getElementById("format");
     var format = formatEl ? formatEl.value : "mp4";
     var playlist = document.getElementById("playlist").checked;
 
     var apiBase = getApiBase();
     if (!apiBase) {
-      showMessage("Enter the API base URL above (deploy the api/ folder to Railway or Render first).", "error");
+      showMessage("Open Advanced and set the API base URL, or deploy the api/ folder and use this app from the same origin.", "error");
       return;
     }
     if (apiUrlInput && apiUrlInput.value.trim()) setApiBase(apiBase);

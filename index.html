@@ -64,11 +64,10 @@
         <div class="advanced-content">
           <div class="field api-field">
             <label class="label" for="apiUrl">API base URL</label>
-            <input type="text" id="apiUrl" class="input" placeholder="https://your-yt-api.railway.app"
+            <input type="text" id="apiUrl" class="input" placeholder="https://yt-downloader.YOUR-NAME.workers.dev"
               autocomplete="url" />
             <span class="input-focus"></span>
-            <p class="hint">Only needed if downloads don’t work. Deploy the repo’s <code>api/</code> to Railway or
-              Render and paste the URL here.</p>
+                        <p class="hint">Override the Cloudflare Worker. Deploy <code>worker/</code> to Cloudflare (free) or <code>api/</code> to Railway/Render for full audio transcoding (mp3, wav…).</p>
           </div>
         </div>
       </details>

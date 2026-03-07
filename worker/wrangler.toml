@@ -1,0 +1,6 @@
+name = "yt-downloader"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Routes will be available at https://yt-downloader.<your-subdomain>.workers.dev
+# After deploying, copy that URL into config.js as window.YT_DOWNLOADER_API

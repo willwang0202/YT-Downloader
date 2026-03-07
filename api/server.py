@@ -43,13 +43,18 @@ else:
 
 class DownloadRequest(BaseModel):
     url: str
-    format: str  # mov | mp4 | mp3 | wav
+    format: str  # video: mp4, mov, webm, mkv | audio: mp3, wav, m4a, aac, ogg, flac
     playlist: bool = False
+
+
+VIDEO_FORMATS = ("mp4", "mov", "webm", "mkv")
+AUDIO_FORMATS = ("mp3", "wav", "m4a", "aac", "ogg", "flac")
+ALL_FORMATS = VIDEO_FORMATS + AUDIO_FORMATS
 
 
 def get_ydl_opts(format_key: str, out_dir: str, single: bool) -> dict:
     """Build yt-dlp options for the chosen format and mode."""
-    audio_only = format_key in ("mp3", "wav")
+    audio_only = format_key in AUDIO_FORMATS
     opts = {
         "outtmpl": os.path.join(out_dir, "%(title).100s [%(id)s].%(ext)s"),
         "noplaylist": single,
@@ -59,24 +64,28 @@ def get_ydl_opts(format_key: str, out_dir: str, single: bool) -> dict:
 
     if audio_only:
         opts["format"] = "bestaudio/best"
-        opts["postprocessors"] = [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": format_key,
-            "preferredquality": "192" if format_key == "mp3" else None,
-        }]
-        if format_key == "wav":
-            opts["postprocessors"][0]["preferredquality"] = None
+        # ogg -> vorbis codec; ffmpeg outputs .ogg
+        codec = "vorbis" if format_key == "ogg" else format_key
+        pp = {"key": "FFmpegExtractAudio", "preferredcodec": codec}
+        if format_key == "mp3":
+            pp["preferredquality"] = "192"
+        elif format_key in ("wav", "flac"):
+            pp["preferredquality"] = None
+        opts["postprocessors"] = [pp]
     else:
         opts["format"] = "bv*+ba/b"
-        opts["merge_output_format"] = "mov" if format_key == "mov" else "mp4"
+        opts["merge_output_format"] = format_key
 
     return opts
 
 
 @app.post("/api/download")
 def download(req: DownloadRequest):
-    if req.format not in ("mov", "mp4", "mp3", "wav"):
-        raise HTTPException(status_code=400, detail="format must be mov, mp4, mp3, or wav")
+    if req.format not in ALL_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"format must be one of: {', '.join(ALL_FORMATS)}",
+        )
 
     with tempfile.TemporaryDirectory() as tmpdir:
         single = not req.playlist
