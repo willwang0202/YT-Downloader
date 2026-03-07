@@ -1,6 +1,6 @@
 # Build YT-Downloader.exe (Windows) and YT-Downloader.app (macOS) on push of a version tag.
+# Creates a GitHub Release and uploads the built files + YT-Downloader.py.
 # From your Mac: git tag v2.1.0 && git push origin v2.1.0
-# Then create a Release from the tag; artifacts are in the Actions run. Optionally use the release job below.
 
 name: Build release
 
@@ -60,3 +60,39 @@ jobs:
         with:
           name: YT-Downloader-macos
           path: dist/YT-Downloader-mac.zip
+
+  release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: YT-Downloader-windows
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: YT-Downloader-macos
+
+      - name: Create Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            YT-Downloader.exe
+            YT-Downloader-mac.zip
+            YT-Downloader.py
+          generate_release_notes: true
+          body: |
+            **Downloads**
+            - **YT-Downloader.exe** — Windows (no Python needed)
+            - **YT-Downloader-mac.zip** — macOS (unzip and open `YT-Downloader.app`)
+            - **YT-Downloader.py** — Single script (Python 3.10+ required)
+
+            Run with no arguments to open the web UI in your browser.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
