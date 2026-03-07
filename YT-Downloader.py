@@ -71,7 +71,7 @@ import webview
 # -----------------------------------------------------------------------------
 # Version & GitHub update check
 # -----------------------------------------------------------------------------
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 GITHUB_REPO       = "willwang0202/YT-Downloader"
 GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 RELEASE_URL       = f"https://github.com/{GITHUB_REPO}/releases/latest"
@@ -203,6 +203,22 @@ class Api:
             pass
 
 # -----------------------------------------------------------------------------
+# macOS dock icon (script mode only; frozen .app gets icon from PyInstaller)
+# -----------------------------------------------------------------------------
+def _set_macos_icon(base: Path) -> None:
+    if sys.platform != "darwin" or getattr(sys, "frozen", False):
+        return
+    try:
+        from AppKit import NSApplication, NSImage  # type: ignore[import]
+        icon_path = str(base / "Icon.png")
+        if Path(icon_path).exists():
+            NSApplication.sharedApplication().setApplicationIconImage_(
+                NSImage.alloc().initByReferencingFile_(icon_path)
+            )
+    except Exception:
+        pass
+
+# -----------------------------------------------------------------------------
 # Entry point
 # -----------------------------------------------------------------------------
 def main() -> None:
@@ -210,6 +226,8 @@ def main() -> None:
     _base    = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
     _web_dir = _base / "web"
     _html    = str(_web_dir / "index.html")
+
+    _set_macos_icon(_base)
 
     api    = Api()
     window = webview.create_window(
