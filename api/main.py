@@ -6,6 +6,7 @@ import os
 import tempfile
 import zipfile
 import io
+import atexit
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -15,6 +16,22 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import yt_dlp
+
+# ------------------------------------------------------------------
+# Cookie support: set YOUTUBE_COOKIES env var to the contents of a
+# cookies.txt (Netscape format) exported from your browser.
+# This lets yt-dlp bypass YouTube's bot detection on server deploys.
+# ------------------------------------------------------------------
+_cookie_file = None
+_cookie_content = os.environ.get("YOUTUBE_COOKIES", "").strip()
+if _cookie_content:
+    _tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", delete=False, prefix="yt_cookies_"
+    )
+    _tmp.write(_cookie_content)
+    _tmp.close()
+    _cookie_file = _tmp.name
+    atexit.register(lambda: Path(_cookie_file).unlink(missing_ok=True))
 
 app = FastAPI(title="YT-Downloader API", version="1.0.0")
 
@@ -61,6 +78,8 @@ def get_ydl_opts(format_key: str, out_dir: str, single: bool) -> dict:
         "quiet": True,
         "no_warnings": True,
     }
+    if _cookie_file:
+        opts["cookiefile"] = _cookie_file
 
     if audio_only:
         opts["format"] = "bestaudio/best"
