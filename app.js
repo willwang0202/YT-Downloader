@@ -18,12 +18,12 @@
     try {
       var stored = localStorage.getItem(STORAGE_KEY);
       if (stored) return stored.replace(/\/$/, "");
-    } catch (_) {}
+    } catch (_) { }
     return window.location.origin;
   }
 
   function setApiBase(url) {
-    try { localStorage.setItem(STORAGE_KEY, url); } catch (_) {}
+    try { localStorage.setItem(STORAGE_KEY, url); } catch (_) { }
   }
 
   function setLoading(loading) {
@@ -127,8 +127,13 @@
     try {
       var saved = localStorage.getItem(STORAGE_KEY);
       if (saved) apiUrlInput.value = saved;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   setValidity(urlInput.value.trim().length > 0);
+
+  var versionEl = document.getElementById("version");
+  if (versionEl && window.YT_DOWNLOADER_VERSION) {
+    versionEl.textContent = "v" + window.YT_DOWNLOADER_VERSION;
+  }
 })();

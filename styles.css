@@ -321,3 +321,9 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+.footer .version {
+  margin-top: 0.35rem;
+  font-size: 0.7rem;
+  opacity: 0.5;
+  letter-spacing: 0.04em;
+}
