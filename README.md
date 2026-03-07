@@ -2,6 +2,35 @@
 
 A **local-only** Python app that wraps [yt-dlp](https://github.com/yt-dlp/yt-dlp). No web API, no backend — it runs entirely on your machine and only connects to the internet to fetch videos. Works on **Windows** and **macOS**.
 
+## Single-file release (easiest)
+
+Download **one file** and run it (no repo clone needed):
+
+```bash
+# Download YT-Downloader.py from the repo, then:
+python YT-Downloader.py
+```
+
+With no arguments it opens the **web UI** in your browser. First run creates a `.venv` next to the file and installs dependencies; later runs reuse it.
+
+```bash
+python YT-Downloader.py "https://youtube.com/watch?v=..."
+python YT-Downloader.py --web
+python YT-Downloader.py --gui
+python YT-Downloader.py "https://..." -f mp3 --playlist
+```
+
+You can attach `YT-Downloader.py` to a [GitHub Release](https://github.com/willwang0202/YT-Downloader/releases) so users download a single runnable file.
+
+### Standalone .exe (Windows) and .app (macOS)
+
+To build **YT-Downloader.exe** and **YT-Downloader.app** so users don’t need Python:
+
+- **Windows:** build on Windows → `dist/YT-Downloader.exe`
+- **macOS:** build on macOS → `dist/YT-Downloader.app`
+
+See **[BUILD.md](BUILD.md)** for PyInstaller steps. Use **[RELEASE_DESCRIPTION.md](RELEASE_DESCRIPTION.md)** as the GitHub release description.
+
 ## What you need
 
 - **Python 3.10+** — [python.org](https://www.python.org/downloads/) (Windows: check “Add Python to PATH” when installing)
@@ -78,13 +107,15 @@ Your browser will open to the UI. Paste a URL, choose format and playlist option
 
 ```
 YT-Downloader/
-├── run.py              # Single entry point (macOS + Windows)
-├── yt_downloader.py    # Main app (CLI + GUI + --web)
-├── server.py           # Local web server for web UI
-├── web/                # Web UI (HTML, CSS, JS)
+├── YT-Downloader.py   # Single runnable release file (embed all-in-one)
+├── run.py             # Entry point (macOS + Windows)
+├── yt_downloader.py   # Main app (CLI + GUI + --web)
+├── server.py          # Local web server for web UI
+├── version.py         # Version & GitHub update check
+├── web/               # Web UI (HTML, CSS, JS)
 ├── requirements.txt
-├── run.sh              # Optional: ./run.sh (calls run.py)
-├── run.bat             # Optional: run.bat (calls run.py)
+├── run.sh
+├── run.bat
 └── README.md
 ```
 

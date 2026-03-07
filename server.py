@@ -32,7 +32,7 @@ from yt_downloader import ALL_FORMATS, get_ydl_opts
 try:
     from version import __version__, check_github_update_cached
 except ImportError:
-    __version__ = "0.0.0"
+    __version__ = "2.1.0"
     def check_github_update_cached():
         return {"current": __version__, "latest": None, "update_available": False, "release_url": ""}
 

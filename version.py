@@ -7,7 +7,7 @@ import ssl
 import threading
 from urllib.request import Request, urlopen
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 GITHUB_REPO = "willwang0202/YT-Downloader"
 GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"

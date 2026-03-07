@@ -1,0 +1,62 @@
+# Build YT-Downloader.exe (Windows) and YT-Downloader.app (macOS) on push of a version tag.
+# From your Mac: git tag v2.1.0 && git push origin v2.1.0
+# Then create a Release from the tag; artifacts are in the Actions run. Optionally use the release job below.
+
+name: Build release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build .exe
+        run: pyinstaller YT-Downloader.spec
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YT-Downloader-windows
+          path: dist/YT-Downloader.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build .app
+        run: pyinstaller YT-Downloader.spec
+
+      - name: Zip .app
+        run: cd dist && zip -r YT-Downloader-mac.zip YT-Downloader.app
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YT-Downloader-macos
+          path: dist/YT-Downloader-mac.zip
