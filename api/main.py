@@ -25,6 +25,8 @@ import yt_dlp
 _cookie_file = None
 _cookie_content = os.environ.get("YOUTUBE_COOKIES", "").strip()
 if _cookie_content:
+    # Some platforms store multiline env vars with escaped \n — normalise them
+    _cookie_content = _cookie_content.replace("\\n", "\n")
     _tmp = tempfile.NamedTemporaryFile(
         mode="w", suffix=".txt", delete=False, prefix="yt_cookies_"
     )
