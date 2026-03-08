@@ -360,7 +360,7 @@ class Api:
         if model_name not in TRANSCRIBE_MODELS:
             raise ValueError(f"Invalid transcription model: {model_name}")
         if not _is_transcribe_model_downloaded(model_name):
-            raise RuntimeError("This transcription model is not installed yet.")
+            _download_transcribe_model(model_name)
         model = self._model_cache.get(model_name)
         if model is None:
             model = WhisperModel(
@@ -420,8 +420,6 @@ class Api:
             return {
                 "success": False,
                 "error": str(exc),
-                "needs_model_download": True,
-                "model_name": model_name,
             }
 
         try:

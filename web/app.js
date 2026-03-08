@@ -249,7 +249,7 @@
     if (formatField) formatField.hidden = transcribe;
     if (playlistField) playlistField.hidden = transcribe;
     if (audioFileField) audioFileField.hidden = !(transcribe && fileSource);
-    if (urlField) urlField.hidden = transcribe && fileSource;
+    if (urlField) urlField.hidden = (transcribe && fileSource);
 
     if (urlLabelEl) {
       urlLabelEl.textContent = transcribe ? (t("youtubeUrlLabel") || "YouTube URL") : (t("urlLabel") || "URL");
@@ -327,65 +327,9 @@
     attachRevealLink(path);
   }
 
-  function closeModelPrompt(accepted) {
-    modelModal.hidden = true;
-    if (modalResolver) {
-      var resolve = modalResolver;
-      modalResolver = null;
-      resolve(accepted);
-    }
-  }
 
-  function showModelPrompt(model) {
-    modelModalTitle.textContent = t("modal.title") || "Download transcription model?";
-    modelModalCancelBtn.textContent = t("modal.cancel") || "Cancel";
-    modelModalConfirmBtn.textContent = t("modal.confirm") || "Download model";
 
-    var modelName = model ? model.label : defaultTranscribeModel;
-    var description = model && model.description ? model.description : "";
-    var downloadSize = model && typeof model.download_size_mb === "number" ? "~" + model.download_size_mb + " MB" : "";
-    var diskSize = model && typeof model.disk_size_mb === "number" ? "~" + model.disk_size_mb + " MB" : "";
-    var copy = currentLang === "zh-TW"
-      ? "\u8f49\u9304\u6703\u5728\u672c\u6a5f\u57f7\u884c\uff0c\u9996\u6b21\u4f7f\u7528\u9700\u8981\u5148\u4e0b\u8f09 " + modelName + " \u6a21\u578b\u3002\u4e0b\u8f09\u5927\u5c0f\u7d04 " + downloadSize + "\uff0c\u4f54\u7528\u7a7a\u9593\u7d04 " + diskSize + "\u3002" + (description ? " " + description : "")
-      : "Transcription runs locally and needs the " + modelName + " model before it can start. Download size: " + downloadSize + ". Disk usage: " + diskSize + "." + (description ? " " + description : "");
-    modelModalCopy.textContent = copy;
-    modelModal.hidden = false;
 
-    return new Promise(function (resolve) {
-      modalResolver = resolve;
-    });
-  }
-
-  // Called from form submit: shows "cancelled" message, returns a Promise for the transcription flow.
-  function ensureModelDownloaded() {
-    var model = getSelectedModel();
-    if (!model) return Promise.resolve(true);
-    if (model.installed) return Promise.resolve(true);
-    if (_modelPromptPending) return Promise.resolve(false);
-
-    _modelPromptPending = true;
-    return showModelPrompt(model).then(function (accepted) {
-      _modelPromptPending = false;
-      if (!accepted) {
-        showMessage(escHtml(t("messages.modelDownloadCancelled") || "Transcription was cancelled because the model was not downloaded."), "info");
-        return false;
-      }
-
-      showMessage(escHtml(t("messages.downloadingModel") || "Downloading the transcription model. This may take a few minutes on first use."), "info");
-      return window.pywebview.api.download_transcription_model(model.id).then(function (result) {
-        if (!result || !result.success) {
-          throw new Error((result && result.error) || (t("messages.modelDownloadFailed") || "Model download failed."));
-        }
-        sttModels = result.models || sttModels;
-        refreshModelOptions(model.id);
-        showMessage(escHtml(t("messages.modelReady") || "Model downloaded. Starting transcription\u2026"), "info");
-        return true;
-      });
-    }).catch(function (err) {
-      _modelPromptPending = false;
-      throw err;
-    });
-  }
 
   function submitDownload() {
     var url = urlInput.value.trim();
@@ -406,14 +350,21 @@
     var sourceValue = sourceType === "file" ? audioFilePath : urlInput.value.trim();
     var modelName = transcribeModelEl ? transcribeModelEl.value : defaultTranscribeModel;
 
-    return ensureModelDownloaded().then(function (ready) {
-      if (!ready) return;
-      return window.pywebview.api.transcribe(sourceType, sourceValue, modelName, outputDir).then(function (result) {
-        if (!result || !result.success) {
-          throw new Error((result && result.error) || (t("messages.transcribeFailed") || "Transcription failed"));
-        }
-        showTranscriptionSuccess(result);
-      });
+    var model = getSelectedModel();
+    if (model && !model.installed) {
+      showMessage(escHtml(t("messages.downloadingModel") || "Downloading the transcription model. This may take a few minutes on first use."), "info");
+    }
+
+    return window.pywebview.api.transcribe(sourceType, sourceValue, modelName, outputDir).then(function (result) {
+      if (!result || !result.success) {
+        throw new Error((result && result.error) || (t("messages.transcribeFailed") || "Transcription failed"));
+      }
+      var modelData = getSelectedModel();
+      if (modelData && !modelData.installed) {
+        modelData.installed = true;
+        refreshModelOptions(modelName);
+      }
+      showTranscriptionSuccess(result);
     });
   }
 
@@ -556,24 +507,6 @@
       applyLanguage(btn.getAttribute("data-lang") || "en");
     });
   });
-
-  if (modelModalCancelBtn) {
-    modelModalCancelBtn.addEventListener("click", function () {
-      closeModelPrompt(false);
-    });
-  }
-
-  if (modelModalConfirmBtn) {
-    modelModalConfirmBtn.addEventListener("click", function () {
-      closeModelPrompt(true);
-    });
-  }
-
-  if (modelModal) {
-    modelModal.addEventListener("click", function (event) {
-      if (event.target === modelModal) closeModelPrompt(false);
-    });
-  }
 
   function init() {
     applyLanguage(currentLang);
