@@ -30,6 +30,7 @@
   var sttModels = [];
   var defaultTranscribeModel = "base";
   var modalResolver = null;
+  var _initialized = false;
 
   var translations = {
     "en": {
@@ -489,6 +490,11 @@
     modeEl.addEventListener("change", function () {
       hideMessage();
       updateModeUI();
+      if (_initialized && isTranscribeMode()) {
+        ensureModelDownloaded().catch(function (err) {
+          showMessage(escHtml((err && err.message) || (t("messages.modelDownloadFailed") || "Model download failed.")), "error");
+        });
+      }
     });
   }
 
@@ -502,6 +508,11 @@
   if (transcribeModelEl) {
     transcribeModelEl.addEventListener("change", function () {
       updateModelHint();
+      if (_initialized && isTranscribeMode()) {
+        ensureModelDownloaded().catch(function (err) {
+          showMessage(escHtml((err && err.message) || (t("messages.modelDownloadFailed") || "Model download failed.")), "error");
+        });
+      }
     });
   }
 
@@ -588,8 +599,10 @@
 
       updateModeUI();
       validateForm();
+      _initialized = true;
     }).catch(function () {
       validateForm();
+      _initialized = true;
     });
   }
 
