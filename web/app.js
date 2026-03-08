@@ -249,7 +249,7 @@
     if (formatField) formatField.hidden = transcribe;
     if (playlistField) playlistField.hidden = transcribe;
     if (audioFileField) audioFileField.hidden = !(transcribe && fileSource);
-    if (urlField) urlField.hidden = (transcribe && fileSource);
+    if (urlField) urlField.hidden = transcribe && fileSource;
 
     if (urlLabelEl) {
       urlLabelEl.textContent = transcribe ? (t("youtubeUrlLabel") || "YouTube URL") : (t("urlLabel") || "URL");
