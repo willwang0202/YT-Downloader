@@ -23,13 +23,40 @@
 
     <form class="form" id="form" novalidate>
       <div class="field">
+        <label class="label" for="mode">Action</label>
+        <select id="mode" name="mode" class="input input-select" aria-label="Action">
+          <option value="download">Download</option>
+          <option value="transcribe">Transcribe</option>
+        </select>
+        <span class="input-focus"></span>
+      </div>
+
+      <div class="field" id="transcribe-source-field" hidden>
+        <label class="label" for="transcribe-source">Transcribe from</label>
+        <select id="transcribe-source" name="transcribe-source" class="input input-select" aria-label="Transcription source">
+          <option value="youtube">YouTube URL</option>
+          <option value="file">Audio file</option>
+        </select>
+        <span class="input-focus"></span>
+      </div>
+
+      <div class="field">
         <label class="label" for="url">URL</label>
         <input type="text" id="url" name="url" class="input"
           placeholder="https://youtube.com/watch?v=… or playlist link" required autocomplete="off" />
         <span class="input-focus"></span>
       </div>
 
-      <div class="field">
+      <div class="field" id="audio-file-field" hidden>
+        <label class="label" for="audio-file">Audio file</label>
+        <div class="folder-row">
+          <input type="text" id="audio-file" class="input folder-input" readonly
+            placeholder="Choose an audio or video file" />
+          <button type="button" class="btn btn-secondary" id="audio-browse-btn">Browse…</button>
+        </div>
+      </div>
+
+      <div class="field" id="format-field">
         <label class="label" for="format">Format</label>
         <select id="format" name="format" class="input input-select" aria-label="Output format">
           <optgroup label="Video">
@@ -50,6 +77,13 @@
         <span class="input-focus"></span>
       </div>
 
+      <div class="field" id="transcribe-model-field" hidden>
+        <label class="label" for="transcribe-model">Model</label>
+        <select id="transcribe-model" name="transcribe-model" class="input input-select" aria-label="Transcription model"></select>
+        <span class="input-focus"></span>
+        <p class="hint" id="transcribe-model-hint">Creates .txt and .srt transcript files locally on your computer.</p>
+      </div>
+
       <div class="field">
         <label class="label" for="output-dir">Save to</label>
         <div class="folder-row">
@@ -59,7 +93,7 @@
         </div>
       </div>
 
-      <div class="field playlist-field">
+      <div class="field playlist-field" id="playlist-field">
         <label class="toggle-wrap">
           <input type="checkbox" id="playlist" name="playlist" class="toggle" />
           <span class="toggle-track"></span>
@@ -83,6 +117,19 @@
       <p class="version" id="version"></p>
     </footer>
   </main>
+
+  <div class="modal-backdrop" id="model-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="model-modal-title">
+      <h2 class="modal-title" id="model-modal-title">Download transcription model?</h2>
+      <p class="modal-copy" id="model-modal-copy">
+        Transcription runs locally and needs a one-time model download before it can start.
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="model-modal-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary btn-inline" id="model-modal-confirm">Download model</button>
+      </div>
+    </div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

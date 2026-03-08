@@ -47,6 +47,7 @@ jobs:
           --icon Icon.ico
           --add-data "web;web"
           --collect-all webview
+          --collect-data imageio_ffmpeg
           YT-Downloader.py
 
       - name: Upload Windows artifact
@@ -98,6 +99,7 @@ jobs:
           --icon Icon.icns
           --add-data "web:web"
           --collect-all webview
+          --collect-data imageio_ffmpeg
           YT-Downloader.py
 
       - name: Zip .app
