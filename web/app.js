@@ -145,7 +145,7 @@
     try {
       var stored = localStorage.getItem("yt_downloader_lang");
       if (stored === "zh-TW") return "zh-TW";
-    } catch (e) {}
+    } catch (e) { }
     return "en";
   })();
 
@@ -356,39 +356,6 @@
     });
   }
 
-  // Called from mode/model-select change: silently closes on cancel (no "transcription cancelled" message).
-  function offerModelDownload() {
-    if (_modelPromptPending) return;
-    var model = getSelectedModel();
-    if (!model || model.installed) return;
-
-    _modelPromptPending = true;
-    showModelPrompt(model).then(function (accepted) {
-      _modelPromptPending = false;
-      if (!accepted) {
-        if (modeEl && modeEl.value === "transcribe") {
-          modeEl.value = "download";
-          updateModeUI();
-        }
-        return;
-      }
-
-      showMessage(escHtml(t("messages.downloadingModel") || "Downloading the transcription model. This may take a few minutes on first use."), "info");
-      return window.pywebview.api.download_transcription_model(model.id).then(function (result) {
-        if (!result || !result.success) {
-          showMessage(escHtml((result && result.error) || (t("messages.modelDownloadFailed") || "Model download failed.")), "error");
-          return;
-        }
-        sttModels = result.models || sttModels;
-        refreshModelOptions(model.id);
-        showMessage(escHtml(t("messages.modelReady") || "Model downloaded. Starting transcription\u2026"), "info");
-      });
-    }).catch(function (err) {
-      _modelPromptPending = false;
-      showMessage(escHtml((err && err.message) || (t("messages.modelDownloadFailed") || "Model download failed.")), "error");
-    });
-  }
-
   // Called from form submit: shows "cancelled" message, returns a Promise for the transcription flow.
   function ensureModelDownloaded() {
     var model = getSelectedModel();
@@ -453,7 +420,7 @@
   function applyLanguage(lang) {
     if (!translations[lang]) lang = "en";
     currentLang = lang;
-    try { localStorage.setItem("yt_downloader_lang", lang); } catch (e) {}
+    try { localStorage.setItem("yt_downloader_lang", lang); } catch (e) { }
 
     var htmlEl = document.documentElement;
     if (htmlEl) htmlEl.lang = lang === "zh-TW" ? "zh-Hant" : "en";
@@ -534,9 +501,6 @@
     modeEl.addEventListener("change", function () {
       hideMessage();
       updateModeUI();
-      if (_initialized && isTranscribeMode()) {
-        offerModelDownload();
-      }
     });
   }
 
@@ -550,9 +514,6 @@
   if (transcribeModelEl) {
     transcribeModelEl.addEventListener("change", function () {
       updateModelHint();
-      if (_initialized && !_suppressChangeCheck && isTranscribeMode()) {
-        offerModelDownload();
-      }
     });
   }
 
