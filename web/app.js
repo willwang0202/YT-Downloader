@@ -31,6 +31,8 @@
   var defaultTranscribeModel = "base";
   var modalResolver = null;
   var _initialized = false;
+  var _modelPromptPending = false;
+  var _suppressChangeCheck = false;
 
   var translations = {
     "en": {
@@ -208,6 +210,7 @@
 
   function refreshModelOptions(selectedId) {
     if (!transcribeModelEl) return;
+    _suppressChangeCheck = true;
     transcribeModelEl.innerHTML = "";
     for (var i = 0; i < sttModels.length; i++) {
       var model = sttModels[i];
@@ -217,6 +220,7 @@
       transcribeModelEl.appendChild(option);
     }
     transcribeModelEl.value = selectedId || defaultTranscribeModel;
+    _suppressChangeCheck = false;
     updateModelHint();
   }
 
@@ -352,12 +356,49 @@
     });
   }
 
+  // Called from mode/model-select change: silently closes on cancel (no "transcription cancelled" message).
+  function offerModelDownload() {
+    if (_modelPromptPending) return;
+    var model = getSelectedModel();
+    if (!model || model.installed) return;
+
+    _modelPromptPending = true;
+    showModelPrompt(model).then(function (accepted) {
+      _modelPromptPending = false;
+      if (!accepted) {
+        if (modeEl && modeEl.value === "transcribe") {
+          modeEl.value = "download";
+          updateModeUI();
+        }
+        return;
+      }
+
+      showMessage(escHtml(t("messages.downloadingModel") || "Downloading the transcription model. This may take a few minutes on first use."), "info");
+      return window.pywebview.api.download_transcription_model(model.id).then(function (result) {
+        if (!result || !result.success) {
+          showMessage(escHtml((result && result.error) || (t("messages.modelDownloadFailed") || "Model download failed.")), "error");
+          return;
+        }
+        sttModels = result.models || sttModels;
+        refreshModelOptions(model.id);
+        showMessage(escHtml(t("messages.modelReady") || "Model downloaded. Starting transcription\u2026"), "info");
+      });
+    }).catch(function (err) {
+      _modelPromptPending = false;
+      showMessage(escHtml((err && err.message) || (t("messages.modelDownloadFailed") || "Model download failed.")), "error");
+    });
+  }
+
+  // Called from form submit: shows "cancelled" message, returns a Promise for the transcription flow.
   function ensureModelDownloaded() {
     var model = getSelectedModel();
     if (!model) return Promise.resolve(true);
     if (model.installed) return Promise.resolve(true);
+    if (_modelPromptPending) return Promise.resolve(false);
 
+    _modelPromptPending = true;
     return showModelPrompt(model).then(function (accepted) {
+      _modelPromptPending = false;
       if (!accepted) {
         showMessage(escHtml(t("messages.modelDownloadCancelled") || "Transcription was cancelled because the model was not downloaded."), "info");
         return false;
@@ -373,6 +414,9 @@
         showMessage(escHtml(t("messages.modelReady") || "Model downloaded. Starting transcription\u2026"), "info");
         return true;
       });
+    }).catch(function (err) {
+      _modelPromptPending = false;
+      throw err;
     });
   }
 
@@ -491,9 +535,7 @@
       hideMessage();
       updateModeUI();
       if (_initialized && isTranscribeMode()) {
-        ensureModelDownloaded().catch(function (err) {
-          showMessage(escHtml((err && err.message) || (t("messages.modelDownloadFailed") || "Model download failed.")), "error");
-        });
+        offerModelDownload();
       }
     });
   }
@@ -508,10 +550,8 @@
   if (transcribeModelEl) {
     transcribeModelEl.addEventListener("change", function () {
       updateModelHint();
-      if (_initialized && isTranscribeMode()) {
-        ensureModelDownloaded().catch(function (err) {
-          showMessage(escHtml((err && err.message) || (t("messages.modelDownloadFailed") || "Model download failed.")), "error");
-        });
+      if (_initialized && !_suppressChangeCheck && isTranscribeMode()) {
+        offerModelDownload();
       }
     });
   }
