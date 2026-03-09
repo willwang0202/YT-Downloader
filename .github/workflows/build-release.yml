@@ -29,7 +29,7 @@ jobs:
         run: |
           python -c "
           from PIL import Image
-          img = Image.open('Icon.png').convert('RGBA')
+          img = Image.open('icon.jpg').convert('RGBA')
           size = 256
           canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
           img.thumbnail((size, size), Image.LANCZOS)
@@ -75,7 +75,7 @@ jobs:
         run: |
           python3 -c "
           from PIL import Image
-          img = Image.open('Icon.png').convert('RGBA')
+          img = Image.open('icon.jpg').convert('RGBA')
           size = 1024
           canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
           img.thumbnail((size, size), Image.LANCZOS)
