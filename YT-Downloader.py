@@ -83,7 +83,7 @@ except Exception:
 # -----------------------------------------------------------------------------
 # Version & GitHub update check
 # -----------------------------------------------------------------------------
-__version__ = "3.0.1"
+__version__ = "3.0.7"
 GITHUB_REPO       = "willwang0202/YT-Downloader"
 GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 RELEASE_URL       = f"https://github.com/{GITHUB_REPO}/releases/latest"
